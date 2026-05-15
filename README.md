@@ -1,61 +1,185 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Shipping Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A RESTful API backend for a multi-center shipping and logistics platform, built with Laravel 12. The system manages the full shipment lifecycle — from client booking through inter-center trailer transfers to final delivery — with role-based access control, real-time notifications, online payments, and performance reporting.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Table of Contents
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- [Overview](#overview)
+- [Roles](#roles)
+- [Key Features](#key-features)
+- [Tech Stack](#tech-stack)
+- [Non-Functional Requirements (NFRs)](#non-functional-requirements-nfrs)
+- [Getting Started](#getting-started)
+- [API Structure](#api-structure)
+- [License](#license)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Overview
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+The Shipping Management System coordinates shipments across a network of logistics centers. A client creates a shipment, the nearest center is automatically assigned, drivers are offered pickup/delivery tasks, trailers transport shipments between centers, and the client pays online and rates the service after delivery.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Roles
 
-## Laravel Sponsors
+| Role | Description |
+|------|-------------|
+| **Super Admin** | Manages the entire platform: creates/updates centers, assigns and swaps center managers, blocks/unblocks users, and views system-wide KPIs. |
+| **Center Manager** | Manages their center's drivers, shipments, and trailers; confirms shipment receipts; generates financial and operational reports. |
+| **Driver** | Receives shipment offers, confirms pickup from client, hands over to center, and confirms final delivery to recipient. |
+| **Client** | Books shipments, tracks status, confirms delivery by scanning QR/barcode, submits ratings and reports, and pays online via Stripe. |
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+## Key Features
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Shipment Lifecycle
+- Client creates a shipment (recipient details + shipment details with type, weight, pieces).
+- System auto-assigns the nearest origin and destination centers using geolocation.
+- A unique barcode and QR code are generated per shipment.
+- Shipment progresses through statuses: `pending → picked_up → at_center → in_transit → out_for_delivery → delivered`.
+- Client confirms delivery by scanning the barcode.
 
-## Contributing
+### Driver Offer System
+- Center managers dispatch shipment offers to nearby available drivers.
+- Drivers accept or reject offers; acceptance triggers status transitions.
+- Drivers confirm handover to center and final delivery to recipient.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Trailer Management
+- Center managers assign shipments to trailers and manage capacity (kg / m³).
+- Trailers transfer between centers; arrival is confirmed by the receiving center.
+- Incoming trailer lists and per-trailer shipment manifests are available.
 
-## Code of Conduct
+### Payments
+- Online payment via **Stripe Checkout** (session-based flow).
+- Webhook handler for asynchronous payment confirmation.
+- Payment status check endpoint.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Ratings & Reports
+- Clients rate completed shipments.
+- Clients and super admins can submit, view, update, and delete reports.
+- Center managers access financial reports, dashboard stats, and shipment summaries.
 
-## Security Vulnerabilities
+### KPIs & Analytics
+- Super admin performance KPI endpoint.
+- Center manager dashboard: total, delivered, and cancelled shipments; average delivery time; daily trend data.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Authentication & Email Verification
+- Token-based authentication via **Laravel Sanctum**.
+- Email verification using numeric codes.
+- Password reset via emailed verification code.
+
+### Real-Time Notifications
+- **Pusher** integration for broadcasting shipment events to connected clients.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Laravel 12 (PHP 8.2+) |
+| Authentication | Laravel Sanctum |
+| Authorisation | Spatie Laravel Permission |
+| Database | MySQL (Eloquent ORM) |
+| Payments | Stripe PHP SDK |
+| Real-Time | Pusher |
+| QR Codes | SimpleSoftwareIO Simple QrCode |
+| PDF Export | barryvdh/laravel-dompdf |
+| Excel Export | Maatwebsite Laravel Excel |
+| Queue | Laravel Queue (database driver) |
+| Testing | PHPUnit 11 |
+
+---
+
+## Non-Functional Requirements (NFRs)
+
+### Security
+- All protected endpoints require a valid **Sanctum bearer token**.
+- Role-based middleware (`role:super_admin`, `role:center_manager`, `role:driver`, `role:client`) enforces least-privilege access on every route group.
+- Email verification is mandatory before a client can use the system (`MustVerifyEmail`).
+- Passwords are hashed using **bcrypt**.
+- Stripe webhooks should be validated using the Stripe signature header.
+
+### Scalability
+- Stateless REST API design allows horizontal scaling behind a load balancer.
+- Database jobs table enables queue-based background processing (e.g., email dispatch, offer distribution).
+- Geolocation-based nearest-center and nearest-driver algorithms reduce manual dispatching overhead.
+
+### Performance
+- Sanctum token authentication avoids session state overhead on the server.
+- Eager loading of relationships (centers, drivers, trailers) is used in report and KPI queries to avoid N+1 problems.
+- Database indexes on foreign keys (center IDs, user IDs, shipment IDs) support performant lookups.
+
+### Reliability
+- Queue workers with retry logic handle transient failures in email and notification delivery.
+- Shipment status transitions are sequential and enforced in service classes, preventing invalid state changes.
+- Stripe webhook processing handles asynchronous payment events to avoid missed payment confirmations.
+
+### Maintainability
+- Service-layer architecture separates business logic from HTTP controllers (`AuthService`, `ShipmentCreationService`, `ShipmentDriverOfferService`, `KpiService`, etc.).
+- Form Requests centralise input validation, keeping controllers lean.
+- API Resource classes standardise JSON response shapes.
+- Migrations provide a versioned, reproducible database schema.
+
+### Observability
+- Structured JSON responses with consistent `message` / `data` / `status` envelopes across all endpoints.
+- Laravel Pail (dev) and queue listener provide real-time log streaming during development.
+
+---
+
+## Getting Started
+
+### Prerequisites
+- PHP 8.2+
+- Composer
+- MySQL
+- Node.js & npm (for Vite assets, if needed)
+
+### Installation
+
+```bash
+# 1. Install PHP dependencies
+composer install
+
+# 2. Copy environment file and configure it
+cp .env.example .env
+php artisan key:generate
+
+# 3. Configure your database, Pusher, and Stripe credentials in .env
+
+# 4. Run migrations
+php artisan migrate --seed
+
+# 5. Start the development server with queue and log listeners
+composer run dev
+```
+
+### Running Tests
+
+```bash
+composer test
+```
+
+---
+
+## API Structure
+
+All routes are prefixed with `/api`. Authentication uses `Authorization: Bearer <token>`.
+
+| Prefix | Middleware | Description |
+|--------|-----------|-------------|
+| *(none)* | public | Sign up, sign in, password reset, email verification |
+| *(none)* | `auth:sanctum, role:client` | Shipment creation, tracking, delivery confirmation, ratings, reports, payments |
+| `super/` | `auth:sanctum, role:super_admin` | User management, center management, KPIs, reports |
+| `centerManagement/` | `auth:sanctum, role:center_manager` | Driver management, shipments, trailers, reports |
+| *(none)* | `auth:sanctum, role:driver` | Offer acceptance/rejection, pickup & delivery confirmation |
+
+---
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is licensed under the [MIT license](https://opensource.org/licenses/MIT).
